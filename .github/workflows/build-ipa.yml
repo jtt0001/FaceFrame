@@ -1,0 +1,25 @@
+name: build-ipa
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show project
+        run: xcodebuild -list -project FaceFrame.xcodeproj || true
+      - name: Build unsigned app
+        run: |
+          set -o pipefail
+          xcodebuild -project FaceFrame.xcodeproj -target FaceFrame -configuration Release -sdk iphoneos -arch arm64 CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build | tail -40
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Release-iphoneos/FaceFrame.app Payload/
+          zip -qr FaceFrame-unsigned.ipa Payload
+          ls -lh FaceFrame-unsigned.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FaceFrame-ipa
+          path: FaceFrame-unsigned.ipa
+          retention-days: 7
